@@ -38,6 +38,10 @@ import { MessagingContext, MessagingProvider } from './contexts/MessagingContext
 
 // Auto sign-out after this much inactivity (active use resets it). 12 hours.
 const IDLE_LIMIT_MS = 12 * 60 * 60 * 1000;
+// How long a "remembered" session stays eligible to auto-restore on a fresh
+// visit (separate from IDLE_LIMIT_MS, which governs auto-logout of an
+// unattended open tab). 30 days.
+const REMEMBER_LIMIT_MS = 30 * 24 * 60 * 60 * 1000;
 
 export default function App() {
   const [currentView, setCurrentView] = useState('member-login');
@@ -161,8 +165,8 @@ export default function App() {
         // calls during that session, not to persist across reloads.
         const remembered = (() => { try { return localStorage.getItem('ngvc_member_remember') !== 'false'; } catch { return true; } })();
         const lastActive = Number(localStorage.getItem('ngvc_last_active') || 0);
-        const idleExpired = lastActive && (Date.now() - lastActive > IDLE_LIMIT_MS);
-        const dropSession = !remembered || idleExpired;
+        const rememberExpired = lastActive && (Date.now() - lastActive > REMEMBER_LIMIT_MS);
+        const dropSession = !remembered || rememberExpired;
         if (dropSession) {
           await supabase.from('member_sessions').delete().eq('device_id', deviceId);
         }
